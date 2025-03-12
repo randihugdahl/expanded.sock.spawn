@@ -1,11 +1,13 @@
-#CALCULATE RAF (Relative Abundance Factor) for Reach 1 and Reach 2 of Nanika River 
-
-#This first section of code uses the manually created columns (reach1_sk_total, reach2_sk_total, reach1_sk_spawners, reach2_sk_spawners) to calculate the mean proportional distribution of SK in Nanika BY YEAR
 
 #load necessary library (this includes all code included in this file)
 library(dplyr)
 library(readr)
 
+
+
+
+#This first section of code uses the manually created columns (reach1_sk_total, reach2_sk_total, reach1_sk_spawners, reach2_sk_spawners) to calculate the mean proportional distribution of SK in Nanika BY YEAR
+#Creates a .csv file named "Yearly_Proportions_Total.csv"
 # Read the dataset (update the file path)
 df <- read.csv("RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3.csv")
 
@@ -53,6 +55,7 @@ write.csv(yearly_proportions, "Yearly_Proportions_Total.csv", row.names = FALSE)
 
 
 #This next section uses the same manually created columns and finds the yearly proportions of SPAWNING SK in Nanika by year 
+#Creates a .csv file named "Yearly_Proportions_Spawners.csv"
 
 # Read the dataset (update the file path if necessary)
 df <- read.csv("RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3.csv")
@@ -101,7 +104,8 @@ write.csv(yearly_proportions, "Yearly_Proportions_Spawners.csv", row.names = FAL
 
 
 
-#This next section takes the yearly averages and combines them to find the overall mean proportional distribution for Nanika across all years for both Reach 1 and Reach 2
+#This next section takes the yearly averages and combines them to find the overall mean proportional distribution for Nanika across all years for both reach 1 and reach 2
+#Creates a .csv file called "Overall_Mean_Proportions_Weighted.csv"
 
 # Read the yearly average proportions for spawners and total fish
 spawners <- read.csv("Yearly_Proportions_Spawners.csv")
@@ -148,6 +152,7 @@ write.csv(overall_summary, "Overall_Mean_Proportions_Weighted.csv", row.names = 
 
 
 #Next we define the RAF (Relative abundance factor) for Reach 2. Use the previously calculated proportional distribution of spawning SK in REACH 2 (Red Slide Creek to Nanika Falls) and divide it by the proprtion of the river surveyed in Reach 2 - calculated separately using distances from Google Earth Pro. 
+#Creates a .csv file called "Relative_Abundance_Factor.csv"
 
 # Read the previously computed overall mean proportions
 overall_summary <- read.csv("Overall_Mean_Proportions_Weighted.csv")
@@ -175,7 +180,7 @@ write.csv(data.frame(RAF = RAF), "Relative_Abundance_Factor.csv", row.names = FA
 
 
 #Then, we apply the RAF to any surveys where the proportion.surveyed field is not equal to 1. Any surveys where the proportion.surveyed field = 1 will remain unchanged in the new effective.prop.surveyed column
-#This creates a new field in .csv output file called "effective.prop.sk.surveyed" which defines the proportion of spawning SK observed, expanded for surveys which did not cover the entire river (eg. only Reach 2).
+#This creates the variable "effective.propsk.surveyed" which defines the proportion of spawning SK observed, expanded for surveys which did not cover the entire river (eg. only reach 2).
 
 # Set file paths
 input_file <- "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3.csv"
@@ -187,7 +192,7 @@ data <- read_csv(input_file, show_col_types = FALSE)
   # Convert to numeric (handling factors/characters)
   data <- data %>%
     mutate(proportion.surveyed = as.numeric(proportion.surveyed)) %>%
-    mutate(effective.prop.sk.surveyed = if_else(is.na(proportion.surveyed), NA_real_, 
+    mutate(effective.propsk.surveyed = if_else(is.na(proportion.surveyed), NA_real_, 
                                              if_else(proportion.surveyed < 1, proportion.surveyed * 4.78, 1)))
   
   # Save the modified dataset
@@ -202,7 +207,7 @@ data <- read_csv(input_file, show_col_types = FALSE)
 
 
 #Next, we apply observer efficiency to the observed sockeye spawner field to produce an expanded estimate of SPAWNING sockeye (as opposed to an expanded estimate of total sockeye, which we already have).
-#This creates the field "Sock_Spawn_EstTotal"
+#This creates the variable "sock_spawn_est_total"
 
 # Set file path (update as needed)
 file_path <- "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3.csv"
