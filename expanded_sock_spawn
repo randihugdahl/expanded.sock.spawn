@@ -1,0 +1,249 @@
+#CALCULATE RAF (Relative Abundance Factor) for Reach 1 and Reach 2 of Nanika River 
+
+#This first section of code uses the manually created columns (reach1_sk_total, reach2_sk_total, reach1_sk_spawners, reach2_sk_spawners) to calculate the mean proportional distribution of SK in Nanika BY YEAR
+
+#load necessary library (this includes all code included in this file)
+library(dplyr)
+library(readr)
+
+# Read the dataset (update the file path)
+df <- read.csv("RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3.csv")
+
+# Convert fish count columns to numeric (ensure correct column names)
+df <- df %>%
+  mutate(
+    reach1_sk_total = as.numeric(df$reach1_sk_total),
+    reach2_sk_total = as.numeric(df$reach2_sk_total)  
+  )
+
+# Remove rows with missing values in these columns
+df_clean <- df %>%
+  filter(!is.na(reach1_sk_total), !is.na(reach2_sk_total))
+
+# Calculate proportions
+df_clean <- df_clean %>%
+  mutate(
+    total_sk = reach1_sk_total + reach2_sk_total,
+    proportion_reach1 = reach1_sk_total / total_sk,
+    proportion_reach2 = reach2_sk_total / total_sk
+  )
+
+# Compute average proportions per year
+yearly_proportions <- df_clean %>%
+  group_by(Inspection.Year) %>%
+  summarise(
+    average_proportion_reach1 = mean(proportion_reach1, na.rm = TRUE),
+    average_proportion_reach2 = mean(proportion_reach2, na.rm = TRUE)
+  )
+
+# Print results
+print(yearly_proportions)
+
+# Optional: Save results to CSV
+write.csv(yearly_proportions, "Yearly_Proportions_Total.csv", row.names = FALSE)
+
+
+
+
+
+
+
+
+
+
+
+#This next section uses the same manually created columns and finds the yearly proportions of SPAWNING SK in Nanika by year 
+
+# Read the dataset (update the file path if necessary)
+df <- read.csv("RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3.csv")
+
+
+# Ensure numeric data types for fish counts
+df <- df %>%
+  mutate(reach1_sk_spawners = as.numeric(reach1_sk_spawners),
+         reach2_sk_spawners = as.numeric(reach2_sk_spawners))
+
+# Remove rows where either reach has missing values
+df_clean <- df %>%
+  filter(!is.na(reach1_sk_spawners), !is.na(reach2_sk_spawners))
+
+# Calculate the proportion for each reach
+df_clean <- df_clean %>%
+  mutate(total_sk = reach1_sk_spawners + reach2_sk_spawners,
+         proportion_reach1 = reach1_sk_spawners / total_sk,
+         proportion_reach2 = reach2_sk_spawners / total_sk)
+
+# Compute average proportions per year
+yearly_proportions <- df_clean %>%
+  group_by(Inspection.Year) %>%
+  summarize(mean_spawnerproportion_reach1 = mean(proportion_reach1, na.rm = TRUE),
+            mean_spawnerproportion_reach2 = mean(proportion_reach2, na.rm = TRUE))
+
+
+# Compute overall average proportions across all years
+overall_mean_reach1_spawn <- mean(df_clean$proportion_reach1, na.rm = TRUE)
+overall_mean_reach2_spawn <- mean(df_clean$proportion_reach2, na.rm = TRUE)
+
+# Print results
+print(yearly_proportions)
+
+cat("\nOverall Mean Proportion:\n")
+cat("Reach 1:", round(overall_mean_reach1_spawn * 100, 2), "%\n")
+cat("Reach 2:", round(overall_mean_reach2_spawn * 100, 2), "%\n")
+
+# Optional: Save results to CSV
+write.csv(yearly_proportions, "Yearly_Proportions_Spawners.csv", row.names = FALSE)
+
+
+
+
+
+
+
+
+#This next section takes the yearly averages and combines them to find the overall mean proportional distribution for Nanika across all years for both Reach 1 and Reach 2
+
+# Read the yearly average proportions for spawners and total fish
+spawners <- read.csv("Yearly_Proportions_Spawners.csv")
+total_sk <- read.csv("Yearly_Proportions_Total.csv")
+
+# Read the original dataset to count number of observations per year
+original_spawners <- read.csv("RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3.csv") %>%
+  filter(!is.na(reach1_sk_spawners), !is.na(reach2_sk_spawners)) %>%
+  group_by(Inspection.Year) %>%
+  summarise(Count = n())
+
+original_total <- read.csv("RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3.csv") %>%
+  filter(!is.na(reach1_sk_total), !is.na(reach2_sk_total)) %>%
+  group_by(Inspection.Year) %>%
+  summarise(Count = n())
+
+# Merge with yearly means to apply weighted average
+spawners <- left_join(spawners, original_spawners, by = "Inspection.Year")
+total_sk <- left_join(total_sk, original_total, by = "Inspection.Year")
+
+# Compute weighted mean
+weighted_mean <- function(proportion, count) {
+  sum(proportion * count, na.rm = TRUE) / sum(count, na.rm = TRUE)
+}
+
+overall_summary <- data.frame(
+  Dataset = c("Spawners Only", "Total SK"),
+  overall_mean_proportion_reach1 = c(weighted_mean(spawners$mean_spawnerproportion_reach1, spawners$Count),
+                                     weighted_mean(total_sk$mean_proportion_reach1, total_sk$Count)),
+  Overall_Mean_Proportion_Reach2 = c(weighted_mean(spawners$mean_spawnerproportion_reach2, spawners$Count),
+                                     weighted_mean(total_sk$mean_proportion_reach2, total_sk$Count))
+)
+
+# Print summary
+print(overall_summary)
+
+# Save summary to CSV
+write.csv(overall_summary, "Overall_Mean_Proportions_Weighted.csv", row.names = FALSE)
+
+
+
+
+
+
+
+#Next we define the RAF (Relative abundance factor) for Reach 2. Use the previously calculated proportional distribution of spawning SK in REACH 2 (Red Slide Creek to Nanika Falls) and divide it by the proprtion of the river surveyed in Reach 2 - calculated separately using distances from Google Earth Pro. 
+
+# Read the previously computed overall mean proportions
+overall_summary <- read.csv("Overall_Mean_Proportions_Weighted.csv")
+
+# Define the proportion of the river surveyed
+reach2_proportion <- 4.30 / 24.16
+
+# Filter for "Spawners Only" row and compute the Relative Abundance Factor (RAF)
+RAF <- overall_summary %>%
+  filter(Dataset == "Spawners Only") %>%
+  pull(overall_mean_proportion_reach2) / reach2_proportion
+
+# Print RAF
+print(RAF)
+
+# Save RAF to a variable file
+write.csv(data.frame(RAF = RAF), "Relative_Abundance_Factor.csv", row.names = FALSE)
+
+
+
+
+
+
+
+
+
+#Then, we apply the RAF to any surveys where the proportion.surveyed field is not equal to 1. Any surveys where the proportion.surveyed field = 1 will remain unchanged in the new effective.prop.surveyed column
+#This creates a new field in .csv output file called "effective.prop.sk.surveyed" which defines the proportion of spawning SK observed, expanded for surveys which did not cover the entire river (eg. only Reach 2).
+
+# Set file paths
+input_file <- "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3.csv"
+output_file <- "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3test.csv"
+
+# Read the CSV file
+data <- read_csv(input_file, show_col_types = FALSE)
+  
+  # Convert to numeric (handling factors/characters)
+  data <- data %>%
+    mutate(proportion.surveyed = as.numeric(proportion.surveyed)) %>%
+    mutate(effective.prop.sk.surveyed = if_else(is.na(proportion.surveyed), NA_real_, 
+                                             if_else(proportion.surveyed < 1, proportion.surveyed * 4.78, 1)))
+  
+  # Save the modified dataset
+  write_csv(data, output_file)
+
+
+
+
+
+
+
+
+
+#Next, we apply observer efficiency to the observed sockeye spawner field to produce an expanded estimate of SPAWNING sockeye (as opposed to an expanded estimate of total sockeye, which we already have).
+#This creates the field "Sock_Spawn_EstTotal"
+
+# Set file path (update as needed)
+file_path <- "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3.csv"
+
+# Read the dataset
+data <- read.csv(file_path)
+
+# Ensure required columns exist
+if (!all(c("Sock_AL_Spawning", "obs.eff") %in% colnames(data))) 
+
+# Create new column: Divide Sock_AL_Spawning by obs.eff (when obs.eff is not NA or 0)
+data <- data %>%
+  mutate(sock_spawn_est_total = ifelse(!is.na(obs.eff) & obs.eff != 0, Sock_AL_Spawning / obs.eff, NA))
+
+# Save the modified dataset
+write.csv(data, "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3.csv", row.names = FALSE)
+
+
+
+
+
+
+#Next, we apply the effective.propsk.surveyed to the newly created field sock_spawn_est_total to provide estimated counts of spawning SK that are expanded to account for variations in survey extent (eg. reach 2 only vs reaches 1 & 2)
+#This section creates the variable "expanded_sock_spawn"
+
+# Set file path (update as needed)
+file_path <- "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3.csv"
+
+# Read the dataset
+data <- read.csv(file_path)
+
+# Ensure required columns exist
+if (!all(c("sock_spawn_est_total", "effective.propsk.surveyed") %in% colnames(data))) 
+
+# Create new column: Divide sock_spawn_est_total by effective.propsk.surveyed (when effective.propsk.surveyed is not NA or 0)
+data <- data %>%
+  mutate(expanded_sock_spawn = ifelse(!is.na(effective.propsk.surveyed) & effective.propsk.surveyed != 0, sock_spawn_est_total / effective.propsk.surveyed, NA))
+
+# Save the modified dataset
+write.csv(data, "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3test.csv", row.names = FALSE)
+
+
+
+
