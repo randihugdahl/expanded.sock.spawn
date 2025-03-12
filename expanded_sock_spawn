@@ -135,7 +135,7 @@ overall_summary <- data.frame(
   Dataset = c("Spawners Only", "Total SK"),
   overall_mean_proportion_reach1 = c(weighted_mean(spawners$mean_spawnerproportion_reach1, spawners$Count),
                                      weighted_mean(total_sk$mean_proportion_reach1, total_sk$Count)),
-  Overall_Mean_Proportion_Reach2 = c(weighted_mean(spawners$mean_spawnerproportion_reach2, spawners$Count),
+  overall_mean_proportion_reach2 = c(weighted_mean(spawners$mean_spawnerproportion_reach2, spawners$Count),
                                      weighted_mean(total_sk$mean_proportion_reach2, total_sk$Count))
 )
 
@@ -184,7 +184,7 @@ write.csv(data.frame(RAF = RAF), "Relative_Abundance_Factor.csv", row.names = FA
 
 # Set file paths
 input_file <- "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3.csv"
-output_file <- "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3test.csv"
+output_file <- "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3.csv"
 
 # Read the CSV file
 data <- read_csv(input_file, show_col_types = FALSE)
@@ -247,7 +247,7 @@ data <- data %>%
   mutate(expanded_sock_spawn = ifelse(!is.na(effective.propsk.surveyed) & effective.propsk.surveyed != 0, sock_spawn_est_total / effective.propsk.surveyed, NA))
 
 # Save the modified dataset
-write.csv(data, "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3test.csv", row.names = FALSE)
+write.csv(data, "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3.csv", row.names = FALSE)
 
 
 
