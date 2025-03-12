@@ -1,3 +1,6 @@
+#Input file must include fields "reach1_sk_total, reach2_sk_total, reach1_sk_spawners, reach2_sk_spawners, Inspection.year, Sock_AL_Spawning, obs.eff" 
+#Can change name of output file to save results as a separate .csv file (currently written to save resulting fields to the input .csv file "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3.csv".
+
 
 #load necessary library (this includes all code included in this file)
 library(dplyr)
