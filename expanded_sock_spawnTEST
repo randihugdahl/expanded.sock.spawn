@@ -8,7 +8,7 @@ library(readr)
 #This first section of code uses the manually created columns (reach1_sk_total, reach2_sk_total, reach1_sk_spawners, reach2_sk_spawners) to calculate the mean proportional distribution of SK in Nanika BY YEAR
 #Creates a .csv file named "Yearly_Proportions_Total.csv"
 # Read the dataset (update the file path)
-df <- read.csv("RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3.csv")
+df <- read.csv("RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3TEST.csv")
 
 # Convert fish count columns to numeric (ensure correct column names)
 df <- df %>%
@@ -57,7 +57,7 @@ write.csv(yearly_proportions, "Yearly_Proportions_TotalTEST.csv", row.names = FA
 #Creates a .csv file named "Yearly_Proportions_Spawners.csv"
 
 # Read the dataset (update the file path if necessary)
-df <- read.csv("RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3.csv")
+df <- read.csv("RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3TEST.csv")
 
 
 # Ensure numeric data types for fish counts
@@ -111,12 +111,12 @@ spawners <- read.csv("Yearly_Proportions_SpawnersTEST.csv")
 total_sk <- read.csv("Yearly_Proportions_TotalTEST.csv")
 
 # Read the original dataset to count number of observations per year
-original_spawners <- read.csv("RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3.csv") %>%
+original_spawners <- read.csv("RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3TEST.csv") %>%
   filter(!is.na(reach1_sk_spawners), !is.na(reach2_sk_spawners)) %>%
   group_by(Inspection.Year) %>%
   summarise(Count = n())
 
-original_total <- read.csv("RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3.csv") %>%
+original_total <- read.csv("RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3TEST.csv") %>%
   filter(!is.na(reach1_sk_total), !is.na(reach2_sk_total)) %>%
   group_by(Inspection.Year) %>%
   summarise(Count = n())
@@ -134,7 +134,7 @@ overall_summary <- data.frame(
   Dataset = c("Spawners Only", "Total SK"),
   overall_mean_proportion_reach1 = c(weighted_mean(spawners$mean_spawnerproportion_reach1, spawners$Count),
                                      weighted_mean(total_sk$mean_proportion_reach1, total_sk$Count)),
-  Overall_Mean_Proportion_Reach2 = c(weighted_mean(spawners$mean_spawnerproportion_reach2, spawners$Count),
+  overall_mean_proportion_reach2 = c(weighted_mean(spawners$mean_spawnerproportion_reach2, spawners$Count),
                                      weighted_mean(total_sk$mean_proportion_reach2, total_sk$Count))
 )
 
@@ -183,7 +183,7 @@ write.csv(data.frame(RAF = RAF), "Relative_Abundance_FactorTEST.csv", row.names 
 
 # Set file paths
 input_file <- "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3TEST.csv"
-output_file <- "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3TEST.csv"
+output_file <- "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3TESTFINAL.csv"
 
 # Read the CSV file
 data <- read_csv(input_file, show_col_types = FALSE)
@@ -222,7 +222,7 @@ data <- data %>%
   mutate(sock_spawn_est_total = ifelse(!is.na(obs.eff) & obs.eff != 0, Sock_AL_Spawning / obs.eff, NA))
 
 # Save the modified dataset
-write.csv(data, "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3TEST.csv", row.names = FALSE)
+write.csv(data, "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3TESTFINAL.csv", row.names = FALSE)
 
 
 
@@ -246,4 +246,4 @@ data <- data %>%
   mutate(expanded_sock_spawn = ifelse(!is.na(effective.propsk.surveyed) & effective.propsk.surveyed != 0, sock_spawn_est_total / effective.propsk.surveyed, NA))
 
 # Save the modified dataset
-write.csv(data, "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3TEST.csv", row.names = FALSE)
+write.csv(data, "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3TESTFINAL.csv", row.names = FALSE)
