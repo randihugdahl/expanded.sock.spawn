@@ -243,7 +243,10 @@ file_path <- "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3.csv"
 data <- read.csv(file_path)
 
 # Ensure required columns exist
-if (!all(c("sock_spawn_est_total", "effective.propsk.surveyed") %in% colnames(data))) 
+if (!all(c("sock_spawn_est_total", "effective.propsk.surveyed") %in% colnames(data))) {
+  stop("Missing required columns in the dataset")
+}
+  
 
 # Create new column: Divide sock_spawn_est_total by effective.propsk.surveyed (when effective.propsk.surveyed is not NA or 0)
 data <- data %>%
