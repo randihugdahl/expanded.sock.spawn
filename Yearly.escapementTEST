@@ -1,0 +1,39 @@
+# Load required packages
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(zoo)
+
+# Define a range of residence times to test
+residence_times <- c(8, 12, 14.25, 16, 19)  # Example values
+
+# Function to calculate escapement for a given residence time
+calculate_escapement <- function(rt) {
+  data %>%
+    mutate(DailyPassage = expanded_sock_spawn / rt) %>%
+    complete(julian.day = full_seq(julian.day, 1)) %>%
+    mutate(DailyPassage = na.approx(DailyPassage, na.rm = FALSE)) %>%
+    group_by(Inspection.Year) %>%
+    summarise(Escapement = sum(DailyPassage, na.rm = TRUE)) %>%
+    mutate(ResidenceTime = rt)
+}
+
+# Apply the function to all residence times and combine results
+escapement_all <- bind_rows(lapply(residence_times, calculate_escapement))
+
+# Remove 2017
+escapement_filtered <- escapement_all %>%
+  filter(Inspection.Year != 2017)
+
+# Save results to CSV
+write.csv(escapement_filtered, "yearly.escapement.csv", row.names = FALSE)
+
+# Plot escapement estimates for different residence times
+ggplot(escapement_filtered, aes(x = Inspection.Year, y = Escapement, color = as.factor(ResidenceTime))) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  labs(title = "Annual Escapement Estimates for Different Residence Times",
+       x = "Year",
+       y = "Escapement (Fish Count)",
+       color = "Residence Time (days)") +
+  theme_minimal()
