@@ -14,7 +14,7 @@ library(readr)
 #This first section of code uses the manually created columns (reach1_sk_total, reach2_sk_total) to calculate the mean proportional distribution of SK in Nanika BY YEAR
 #Creates a .csv file named "Yearly_Proportions_Total.csv"
 # Read the dataset (update the file path)
-df <- read.csv("RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3TOTAL.csv")
+df <- read.csv("RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3TEST.csv")
 
 # Convert fish count columns to numeric (ensure correct column names)
 df <- df %>%
@@ -159,7 +159,7 @@ write.csv(overall_summary, "Overall_Total_Mean_Proportion_Weighted.csv", row.nam
 #Creates a .csv file called "Relative_Abundance_Factor.csv"
 
 # Read the previously computed overall mean proportions
-overall_summary <- read.csv("Overall_Total_Mean_Proportions_Weighted.csv")
+overall_summary <- read.csv("Overall_Total_Mean_Proportion_Weighted.csv")
 
 # Define the proportion of the river surveyed
 reach2_proportion <- 4.30 / 24.16
@@ -192,15 +192,15 @@ output_file <- "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3TEST.total.csv"
 
 # Read the CSV file
 data <- read_csv(input_file, show_col_types = FALSE)
-  
-  # Convert to numeric (handling factors/characters)
-  data <- data %>%
-    mutate(proportion.surveyed = as.numeric(proportion.surveyed)) %>%
-    mutate(effective.propsk.surveyed.total = if_else(is.na(proportion.surveyed), NA_real_, 
-                                             if_else(proportion.surveyed < 1, proportion.surveyed * 4.78, 1)))
-  
-  # Save the modified dataset
-  write_csv(data, output_file)
+
+# Convert to numeric (handling factors/characters)
+data <- data %>%
+  mutate(proportion.surveyed = as.numeric(proportion.surveyed)) %>%
+  mutate(effective.propsk.surveyed.total = if_else(is.na(proportion.surveyed), NA_real_, 
+                                                   if_else(proportion.surveyed < 1, proportion.surveyed * 4.78, 1)))
+
+# Save the modified dataset
+write_csv(data, output_file)
 
 
 
@@ -238,20 +238,22 @@ data <- read_csv(input_file, show_col_types = FALSE)
 
 
 #Next, we apply the effective.propsk.surveyed to the Sock_AL_EstTotal field to provide estimated counts of spawning + holding SK that are expanded to account for variations in survey extent (eg. reach 2 only vs reaches 1 & 2)
-#This section creates the variable "expanded_sock_spawn_total"
+#This section creates the variable "expanded_sock_total"
 
 # Set file path (update as needed)
-file_path <- "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3TEST.csv"
+file_path <- "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3TEST.total.csv"
 
 # Read the dataset
 data <- read.csv(file_path)
 
 # Ensure required columns exist
-if (!all(c("Sock_AL_EstTotal", "effective.propsk.surveyed.total") %in% colnames(data))) 
-
+if (!all(c("Sock_AL_EstTotal", "effective.propsk.surveyed.total") %in% colnames(data))) {
+  stop("Missing required columns in the dataset")
+}
+  
 # Create new column: Divide Sock_AL_EstTotal by effective.propsk.surveyed.total (when effective.propsk.surveyed.total is not NA or 0)
-data <- data %>%
-  mutate(expanded_sock_spawn_total = ifelse(!is.na(effective.propsk.surveyed.total) & effective.propsk.surveyed.total != 0, Sock_AL_EstTotal / effective.propsk.surveyed.total, NA))
+  data <- data %>%
+  mutate(expanded_sock_total = ifelse(!is.na(effective.propsk.surveyed.total) & effective.propsk.surveyed.total != 0, Sock_AL_EstTotal / effective.propsk.surveyed.total, NA))
 
 # Save the modified dataset
 write.csv(data, "RH_SILs.toreview-nanikaSKCH2004-2024_Adjusted3TEST.total.csv", row.names = FALSE)
