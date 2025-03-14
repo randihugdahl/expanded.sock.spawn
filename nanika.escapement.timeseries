@@ -75,12 +75,12 @@ ggplot(Nanika.auc)+
 Nanika.auc.recalc <- Nanika.auc %>% 
   dplyr::group_by(Inspection.Year) %>% 
   dplyr::summarize(test.auc.allinone(day = julian, count= expanded, 
-                                     res.time=15))
+                                     res.time=14.25))  #set residence time as a constant 14.25 days
 
 plot.new.calc.Nanika <- ggplot(Nanika.auc.recalc)+
   geom_point(aes(x=Inspection.Year, y=auc))+
   geom_line(aes(x=Inspection.Year, y=auc))+
-  scale_x_continuous(breaks= seq(2004,2024,1))+
+  scale_x_continuous(breaks= seq(2004,2024,2))+
   scale_y_continuous(limits = c(0,27000), breaks = seq(0,27000,5000))
 plot.new.calc.Nanika
 
@@ -127,6 +127,10 @@ Nanika.auc.recalc <- Nanika.auc %>%
   dplyr::group_by(Inspection.Year, res.time) %>%
   dplyr::summarize(auc = test.auc.allinone(day = julian, count = expanded, res.time = unique(res.time)) %>% pull(auc),
                    .groups = "drop")
+
+#print results of Nanika auc, save as a .csv file "KP.yearly.escapement.csv"
+print(Nanika.auc.recalc)
+write.csv(Nanika.auc.recalc, "KP.yearly.escapement.csv", row.names = FALSE)
 
 # Plot AUC estimates for different residence times
 plot.new.calc.Nanika <- ggplot(Nanika.auc.recalc, aes(x = Inspection.Year, y = auc, color = as.factor(res.time))) +
