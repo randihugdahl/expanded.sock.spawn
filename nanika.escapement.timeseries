@@ -61,10 +61,10 @@ Nanika.auc <- nanika.sils %>%
                 Sock_AL_FishCountability,Sock_AD_Obs,Sock_AD_Est,
                 Sock_AD_.PreSpawnMort,obs.eff,surveyed.full.extent,
                 proportion.surveyed,barriers.present, effective.propsk.surveyed,
-                sock_spawn_est_total, expanded_sock_spawn) %>% 
+                sock_spawn_est_total, expanded_sock_spawn) %>%  #added new columns which I created for Nanika SK
   mutate(julian = yday(SilDate), 
-         obs.eff = ifelse(!is.na(obs.eff),obs.eff,0.8),
-         expanded = expanded_sock_spawn/obs.eff) %>% 
+         obs.eff = ifelse(!is.na(obs.eff),obs.eff,0.8),   #applies obs.eff of 0.8 to any surveys with obs.eff = NA
+         expanded = expanded_sock_spawn/obs.eff) %>%   #change Sock_AL_Spawning field to new expanded_sock_spawn field
   filter(TargetSockeye %in% T)
 
 ggplot(Nanika.auc)+
@@ -117,6 +117,7 @@ plot.new.calc.Nanika
 
 
 ##RH added this section to plot escepement over survey years (2004-2024) testing multiple residence times
+#14.25 is the average of the only 2 residence times which we have for SPAWNERS ONLY (AK calculated)
 # Define residence times to test
 residence_times <- c(8, 12, 14.25, 16, 19)
 
