@@ -1,39 +1,40 @@
 #This code uses reach2_sk_spawners as the count, julian days, and defaults obs.eff to 0.8 if it is listed as NA
 #changes 0 AUC values to NA, removes 2017, interpolates between known points for NA values (ex. survey years with missing data for reach 2)
 
+# Load libraries
 library(readxl)
 library(tidyverse)
 library(ggplot2)
 library(zoo) # For interpolation
 
 # Function to calculate AUC
-test.auc.allinone <- function (day, count, res.time){
+test.auc.allinone <- function(day, count, res.time){
   data.frame(day, count) %>% 
-    add_row(day=0, count=0) %>% 
-    add_row(day=364, count=0) %>% 
+    add_row(day = 0, count = 0) %>% 
+    add_row(day = 364, count = 0) %>% 
     arrange(day) %>% 
-    mutate(survey = seq(1, length(day), by=1)) %>%  
-    mutate(day.x1 = lead(day,1)-res.time) %>% 
-    mutate(day.x2 = lead(day,1) - lead(count,1) / (abs(lead(count,2) - lead(count,1)) / (lead(day,2) - lead(day,1)))) %>% 
-    mutate(day = ifelse(day %in% 0, pmax(day.x1, day.x2, na.rm=T), day)) %>% 
-    mutate(day.x3 = lag(day,1) + res.time) %>% 
-    mutate(day.x4 = lag(day,1) - lag(count,1) / (abs(lag(count,2) - lag(count,1)) / (lag(day,2) - lag(day,1)))) %>% 
-    mutate(day = ifelse(day %in% last(day), pmin(day.x3, day.x4, na.rm=T), day)) %>% 
+    mutate(survey = seq(1, length(day), by = 1)) %>%  
+    mutate(day.x1 = lead(day, 1) - res.time) %>% 
+    mutate(day.x2 = lead(day, 1) - lead(count, 1) / (abs(lead(count, 2) - lead(count, 1)) / (lead(day, 2) - lead(day, 1)))) %>% 
+    mutate(day = ifelse(day %in% 0, pmax(day.x1, day.x2, na.rm = TRUE), day)) %>% 
+    mutate(day.x3 = lag(day, 1) + res.time) %>% 
+    mutate(day.x4 = lag(day, 1) - lag(count, 1) / (abs(lag(count, 2) - lag(count, 1)) / (lag(day, 2) - lag(day, 1)))) %>% 
+    mutate(day = ifelse(day %in% last(day), pmin(day.x3, day.x4, na.rm = TRUE), day)) %>% 
     select(-c(day.x1, day.x2, day.x3, day.x4)) %>% 
-    mutate(day_1 = lag(day))  %>% 
-    mutate(count_1 = lag(count))  %>%
+    mutate(day_1 = lag(day)) %>% 
+    mutate(count_1 = lag(count)) %>%
     mutate(int = day - day_1) %>% 
-    mutate(fish_days = c(NA, diff(day) * zoo::rollmean(count, 2, na.rm = TRUE))) %>%  ##made change to Kristen's code, added na.rm = TRUE because code was not working for years with 2 relevant surveys 
+    mutate(fish_days = c(NA, diff(day) * zoo::rollmean(count, 2, na.rm = TRUE))) %>%  
     summarize(fish_days = sum(na.omit(fish_days))) %>% 
     mutate(auc = fish_days / res.time) %>% 
-    mutate(auc = ifelse(auc == 0, NA, auc)) %>%  # Change 0 values to NA
+    mutate(auc = ifelse(auc == 0, NA, auc)) %>%  
     select(auc)
 }
 
 # Import and process data
 nanika.sils <- read_xlsx("RH_SILs.toreview-nanikaSKCH2004-2024.xlsx", na = "NA")
 
-Nanika.auc <- nanika.sils %>% 
+Nanika.auc.0.2 <- nanika.sils %>% 
   filter(StreamId %in% 428) %>% 
   select(StreamId, StreamName, Inspection.Year, SilDate, Observer,
          Affiliation, TargetSockeye, PrimaryInspMode, Sock_AL_HoldOutside,
@@ -41,40 +42,40 @@ Nanika.auc <- nanika.sils %>%
          Sock_AL_EstTotal, Sock_AL_New, Sock_AL_EstReliability,
          Sock_AL_FishCountability, Sock_AD_Obs, Sock_AD_Est,
          Sock_AD_.PreSpawnMort, obs.eff, surveyed.full.extent,
-         proportion.surveyed, barriers.present, reach2_sk_spawners
-  ) %>%  
+         proportion.surveyed, barriers.present, reach2_sk_spawners) %>%  
   mutate(julian = yday(SilDate), 
+#Default Observer efficiency to 0.8 unless otherwise specified
          obs.eff = ifelse(!is.na(obs.eff), obs.eff, 0.8),   
          expanded = reach2_sk_spawners / obs.eff) %>%   
   filter(TargetSockeye == TRUE)
 
-# Remove 2017
-Nanika.auc <- Nanika.auc %>% 
+# Remove survey from 2017
+Nanika.auc.0.2 <- Nanika.auc.0.2 %>% 
   filter(Inspection.Year != 2017) 
 
 # Recalculate AUC
-Nanika.auc.recalc <- Nanika.auc %>% 
+Nanika.auc.0.2 <- Nanika.auc.0.2 %>% 
   group_by(Inspection.Year) %>% 
   summarize(auc = test.auc.allinone(day = julian, count = expanded, res.time = 14.25)$auc) %>% 
   ungroup()
 
 # Interpolate missing values (linear interpolation)
-Nanika.auc.recalc <- Nanika.auc.recalc %>%
+Nanika.auc.0.2.int <- Nanika.auc.0.2 %>%
   mutate(auc = na.approx(auc, x = Inspection.Year, na.rm = FALSE))
 
 # Mark specific interpolated years
 interpolated_years <- c(2007, 2011, 2017, 2021, 2022, 2023)
-Nanika.auc.recalc <- Nanika.auc.recalc %>%
+Nanika.auc.0.2.int <- Nanika.auc.0.2.int %>%
   mutate(is_interpolated = Inspection.Year %in% interpolated_years)
 
 # Plot with red points for interpolated years
-plot.new.calc.Nanika <- ggplot(Nanika.auc.recalc) +
-  geom_line(aes(x = Inspection.Year, y = auc), color = "black", size = 1) +  # Line for all points
-  geom_point(aes(x = Inspection.Year, y = auc, color = is_interpolated), size = 3) +  # Color-coded points
+plot.Nanika.auc.0.2 <- ggplot(Nanika.auc.0.2.int) +
+  geom_line(aes(x = Inspection.Year, y = auc), color = "black", size = 1) +  
+  geom_point(aes(x = Inspection.Year, y = auc, color = is_interpolated), size = 3) +  
   scale_color_manual(values = c("FALSE" = "black", "TRUE" = "red"), labels = c("Observed", "Interpolated")) +
   scale_x_continuous(breaks = seq(2004, 2024, 2)) +
   scale_y_continuous(limits = c(0, 27000), breaks = seq(0, 27000, 5000)) +
   labs(color = "Point Type", y = "AUC Escapement", x = "Year") +
   theme_minimal()
 
-plot.new.calc.Nanika
+plot.Nanika.auc.0.2
