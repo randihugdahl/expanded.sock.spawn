@@ -60,13 +60,21 @@ Nanika.auc.recalc <- Nanika.auc %>%
 
 # Interpolate missing values (linear interpolation)
 Nanika.auc.recalc <- Nanika.auc.recalc %>%
-  mutate(auc = na.approx(auc, x = Inspection.Year, na.rm = FALSE))  # Interpolates over NA values
+  mutate(auc = na.approx(auc, x = Inspection.Year, na.rm = FALSE))
 
-# Plot new calculation
+# Mark specific interpolated years
+interpolated_years <- c(2007, 2011, 2017, 2021, 2022, 2023)
+Nanika.auc.recalc <- Nanika.auc.recalc %>%
+  mutate(is_interpolated = Inspection.Year %in% interpolated_years)
+
+# Plot with red points for interpolated years
 plot.new.calc.Nanika <- ggplot(Nanika.auc.recalc) +
-  geom_point(aes(x = Inspection.Year, y = auc)) +
-  geom_line(aes(x = Inspection.Year, y = auc)) +
+  geom_line(aes(x = Inspection.Year, y = auc), color = "black", size = 1) +  # Line for all points
+  geom_point(aes(x = Inspection.Year, y = auc, color = is_interpolated), size = 3) +  # Color-coded points
+  scale_color_manual(values = c("FALSE" = "black", "TRUE" = "red"), labels = c("Observed", "Interpolated")) +
   scale_x_continuous(breaks = seq(2004, 2024, 2)) +
-  scale_y_continuous(limits = c(0, 27000), breaks = seq(0, 27000, 5000))
+  scale_y_continuous(limits = c(0, 27000), breaks = seq(0, 27000, 5000)) +
+  labs(color = "Point Type") +
+  theme_minimal()
 
 plot.new.calc.Nanika
