@@ -30,7 +30,7 @@ test.auc.allinone <- function(day, count, res.time){
 nanika.sils <- read_xlsx("RH_SILs.toreview-nanikaSKCH2004-2024.xlsx", na = "NA")
 
 # Filter dataset to include only observations where proportion.surveyed = 1
-Nanika.auc <- nanika.sils %>%
+Nanika.auc.1 <- nanika.sils %>%
   dplyr::filter(StreamId %in% 428, proportion.surveyed == 1, Inspection.Year != 2017) %>%  # Remove 2017
   dplyr::select(StreamId, StreamName, Inspection.Year, SilDate, Observer,
                 Affiliation, TargetSockeye, PrimaryInspMode, Sock_AL_HoldOutside,
@@ -46,32 +46,32 @@ Nanika.auc <- nanika.sils %>%
 # Recalculate AUC with only `proportion.surveyed = 1`
 residence_times <- c(14.25)
 
-Nanika.auc.recalc <- Nanika.auc %>%
+Nanika.auc.1 <- Nanika.auc.1 %>%
   tidyr::expand_grid(res.time = residence_times) %>%
   dplyr::group_by(Inspection.Year, res.time) %>%
   dplyr::summarize(auc = test.auc.allinone(day = julian, count = expanded, res.time = unique(res.time)) %>% pull(auc),
                    .groups = "drop")
 
 # Interpolate missing values (including 2017)
-Nanika.auc.recalc <- Nanika.auc.recalc %>%
+Nanika.auc.1.int <- Nanika.auc.1 %>%
   mutate(auc = na.approx(auc, x = Inspection.Year, na.rm = FALSE))
 
 # Identify interpolated points
 interpolated_years <- c(2017)  # We are focusing on 2017, but this can include other interpolated values if needed
-Nanika.auc.recalc <- Nanika.auc.recalc %>%
+Nanika.auc.1.int <- Nanika.auc.1.int %>%
   mutate(is_interpolated = Inspection.Year %in% interpolated_years)
 
 # Save results to CSV
-write.csv(Nanika.auc.recalc, "KP.yearly.escapement.prop1new.csv", row.names = FALSE)
+write.csv(Nanika.auc.1.int, "KP.yearly.escapement.prop1.csv", row.names = FALSE)
 
 # Plot AUC estimates, highlighting interpolated 2017 point in red
-plot.new.calc.Nanika <- ggplot(Nanika.auc.recalc, aes(x = Inspection.Year, y = auc, color = is_interpolated)) +
+plot.Nanika.auc.1 <- ggplot(Nanika.auc.1.int, aes(x = Inspection.Year, y = auc, color = is_interpolated)) +
   geom_line(color = "black", size = 1) +  # Black line for all values
   geom_point(aes(color = is_interpolated), size = 3) +  # Highlight interpolated points
   scale_color_manual(values = c("FALSE" = "black", "TRUE" = "red"), labels = c("Observed", "Interpolated")) +
   scale_x_continuous(breaks = seq(2004, 2024, 2)) +
   scale_y_continuous(limits = c(0, 27000), breaks = seq(0, 27000, 5000)) +
-  labs(color = "Point Type", y = "AUC Estimate", x = "Year") +
+  labs(color = "Point Type", y = "AUC Escapement", x = "Year") +
   theme_minimal()
 
-plot.new.calc.Nanika
+plot.Nanika.auc.1
